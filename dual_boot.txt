@@ -1,0 +1,359 @@
+[TAB] - Autocompleta rutas o palabras reservadas del sistema
+ls - listado de archivos
+nano - editor de textos en terminal
+mount - montar discos
+
+
+C:\Windows\Panther\setupact.log
+
+setupact.log
+
+Ctrl + B para abrir el cuadro Buscar e introducimos el siguiente texto:
+Detected boot Environment
+
+En el caso de que nuestro sistema use BIOS:
+
+Callback_BootEnvironmentDetect: Detected boot environment: BIOS
+
+En el caso de que nuestro Sistema use UEFI:
+
+Callback_BootEnvironmentDetect: Detected boot environment: UEFI
+
+
+Iniciamos: 
+
+1.	loadkeys es   
+//establecer entrada de teclado en español
+
+2.	ping -c 3 archlinux.org
+//La opción -c 3 establece que se ejecute ping tres veces.
+//Por defecto en la iso habilita el servicio de dhcpcd para el uso de red cableada
+//	wifi-menu  [para usar el wifi]
+//Si no hay conexión activar el servicio de red
+systemctl enable dhcpcd
+//Si no hay disponible una conexión, detenga el servicio dhcpcd con 
+systemctl stop dhcpcd@[interfaz-TAB] 
+donde interfaz puede ser autocompletado con tabulador.
+
+3.	timedatectl set-ntp true
+//Utilice timedatectl(1) para asegurarse de que el reloj del sistema sea preciso:
+//Para comprobar el estado del servicio, utilice 
+timedatectl status
+
+4.	fdisk -l    lsblk --fs
+//Particionado del disco
+//Los resultados que terminan en [rom, loop o airoot] pueden ignorarse.
+//Arch Linux incluye las siguientes herramientas de particionado: fdisk, gdisk, cfdisk, cgdisk, parted. 
+
+5.	cfdisk /dev/sda
+//Se recomienda siempre usar GPT con el arranque UEFI 
+dado que algunos firmwares UEFI no permiten arrancar UEFI desde MBR.
+//Un arranque dual con Windows utilizando Legacy BIOS junto GRUB Legacy como el gestor de arranque,, 
+se debe usar MBR (DOS).
+//Fuente:
+https://wiki.archlinux.org/index.php/Partitioning_(Espa%C3%B1ol)
+
+
+//Particiones dedicadas
+	Particiónes de disco compartidos entre distintos sistemas operativos.
+/boot [gestor de arranque] - 200 MB 
+-si es propenso a utilizar varias imágenes del kernel/boot, 
+-200 o 300 MB es una mejor elección.
+Cada núcleo o sistema de Linux ocupa de forma aproximada unos 30 MB en el /boot.
+/     [Raíz es como C de win] 
+-El contenido del sistema de archivos raíz debe ser adecuado para 
+-arrancar, restaurar, recuperar y/o reparar el sistema. 
+/home [Datos es como D de win]
+-Normalmente donde residen los datos del usuario, las descargas y los archivos multimedia. 
+-Puede ser útil para el caso de que vuelva a reinstalar el sistema Arch dejando el directorio /home intacto
+/swap [Memoria ram virtual]  
+-La partición de intercambio consistía en asignarle el doble de la cantidad de RAM física.
+-Con más de 2 GB de memoria RAM física, generalmente se puede esperar 
+-un buen rendimiento sin la existencia de una partición de intercambio.
+
+/BOOT/EFI
+Los sistemas con UEFI deben de tener un tamaño de entre 50 y 150 MB. 
+Y deben tener su propia partición, necesitan un sistema de archivos específico [fat32]
+
+
+
+7.	mkfs.ext4 /dev/sdaX            --Particion-root
+	mkfs.ext4 /dev/sdaX            --Particion-home
+//Formateamos todos los discos menos la swap con ext4.
+//Tipos de particiones
+Windows: NTFS
+Linux: EXT
+MacOS: HFS+
+USB:   Fat32
+fat32 o vfat - ntfs - ext2 - ext3 - ext4 - ReiserFS
+sudo mkfs.vfat -F 32 -n Mi_Memoria /dev/sdX
+sudo mkntfs -f -L Data -c 65536 -v /dev/sdX
+
+-n asigna etiqueta
+-L asigna etiqueta
+
+8.       mkswap /dev/sdaX
+9.       swapon /dev/sdaX
+//Activando Swap.
+
+
+10.	mount /dev/sdaX /mnt        //Root
+	mkdir /mnt/home            //Creamos carpeta Home
+	mount /dev/sdaX /mnt/home  //Home
+
+/dev/sda1  >> recovery win
+/dev/sda2  >> EFI
+/dev/sda3  >> WIN reserved
+/dev/sda4  >> DISCO C
+/dev/sda5  >> root
+/dev/sda6  >> home
+/dev/sda7  >> swap
+
+
+//[/mnt] Es un directorio vacío que cumple la función de un punto de montaje temporal.
+//fdisk -l [para ver la lista de particiones]
+//Monte el sistema de archivos de la partición [raíz] en [/mnt]
+//Como raíz no tiene nombre o etiqueta solo es [ / ] no se crea carpeta
+//mkdir [para crear carpeta nueva]
+//genfstab es un script detectará posteriormente 
+  los sistemas de archivos montados y el espacio de intercambio.
+
+
+11.	pacstrap /mnt base base-devel
+//Utilice el script pacstrap para instalar el grupo de paquetes base y base-devel
+//Usar base-devel dentro de él se instalara:
+sudo - gcc - pacman - grep - make - gzip - etc... 
+los usara a futuro para instalar programas nuevos.
+
+12.	pacstrap /mnt grub-bios
+//Es un gestor multiarranque
+//Instale el paquete grub. Este reemplazará a grub-legacy [BIOS], si está instalado.
+
+13.	genfstab -U /mnt >> /mnt/etc/fstab
+//Genere un archivo fstab para las etiquetas de nuestras particiones
+//Luego, compruebe el archivo resultante en /mnt/etc/fstab 
+  y modifíquelo en caso de errores.
+
+14.	arch-chroot /mnt
+//raíz al nuevo sistema.
+
+15.	nano /etc/locale.gen
+//Desmarcamos nuestro idioma ES y nuestro pais PERÚ - PE
+//Debe terminar en UTF-8
+//Ctrl + O para guardar 
+//Ctrl + X para cerrar
+//clear limpiar pantalla
+
+16.	locale-gen
+//genérar el idioma selecciona
+
+17.	echo LANG=es_PE.UTF-8 > /etc/locale.conf
+//Establezca la variable LANG en locale.conf
+//ls /usr/share/kbd/consolefonts 
+//setfont tcvn8x16.psf.gz
+
+18.	export LANG=es_PE.UTF-8
+//Exporte la variable LANG con el local especificado al archivo ~/.bashrc
+//Se actualizarán la próxima vez que sea leído ~/.bashrc. 
+  Puede actualizar, ya sea reiniciando
+
+19.	rm -rf /etc/localtime
+	ln -sf /usr/share/zoneinfo/[TAB]
+//Establezca la zona horaria
+//https://www.zeitverschiebung.net/es/continent/sa
+
+20.	ln -sf /usr/share/zoneinfo/America/Lima /etc/localtime
+//Configurado el sistema a nuestra zona
+
+21.	hwclock --systohc --utc
+//Este comando asume que el reloj del hardware está configurado en UTC
+
+22.	echo KEYMAP=es > /etc/vconsole.conf
+//Si ha establecido la distribución de teclado anteriormente, 
+  para que los cambios sean persistentes
+
+23.	echo elnombredemiequipo > /etc/hostname
+//Nombre del equipo, esto no es USUARIOS!
+
+24.	nano /etc/hosts
+            127.0.0.1   localhost   //ipv4
+            ::1         localhost  //ipv6
+            127.0.0.1   elnombredemiequipo.localdomain elnombredemiequipo
+
+//Si el sistema tiene una dirección IP permanente, 
+se debe usar en lugar de 127.0.1.1.
+
+25.	systemctl enable dhcpcd
+//Para activar la conexión cableada, estaba activada en el iso,
+pero dentro de nuestro sistema [/mnt] aún no y listo podemos usar pacman.
+//pacman > gestor de instalación de archivos.
+
+
+
+26.	pacman -S reflector
+//es un script que es capaz de generar una lista y usa los repositorios mas rapidos
+//ordenarlos en base a su velocidad, y sobrescribir el archivo /etc/pacman.d/mirrorlist
+
+27.	reflector --verbose -l 5 --sort rate --save /etc/pacman.d/mirrorlist
+//filtrará los primeros cinco mirrors, los ordenará en base a su velocidad de descarga
+
+28.	pacman -S networkmanager
+	systemctl enable NetworkManager
+//Detección y configuración automática para conectarse a la red. 
+//Las funcionalidades de NetworkManager son útiles tanto para redes inalámbricas como por cable. 
+//NetworkManager se ha iniciado, se conectará automáticamente a cualesquiera 
+  «conexiones del sistema» disponibles que estén configuradas.
+
+30.	pacman -S openssh
+	systemctl enable sshd
+//SSH es un protocolo de red que permite el intercambio de datos sobre un canal seguro entre dos computadoras
+//Para navegar seguros en internet
+
+31.	passwd root
+//Contraseña para root
+
+32.	useradd -m -g users -G wheel -s /bin/bash nombredeusuario
+	passwd nombredeusuario
+
+//Creamos nuestro usuario, para entrar a nuestro escritorio.
+
+33.	nano /etc/sudoers
+	nombre_de_usuario ALL=(ALL) ALL
+//Buscamos root ALL=(ALL) ALL y abajo ponemos nuestro usuario
+para que tenga permisos de superusuario y tenga mismos privilegios que root.
+//CTRL + O para guardar CTRL + X para salir
+
+34.     nano /etc/pacman.conf
+        [multilib]
+        Include = /etc/pacman.d/mirrorlist
+
+        pacman -Syu
+
+35.     pacman -S grub efibootmgr os-prober
+
+mkdir /boot/efi 
+mount /dev/sdaX /boot/efi
+
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck
+
+grub-mkconfig -o /boot/grub/grub.cfg
+
+mkdir /boot/efi/EFI/BOOT
+
+cp /boot/efi/EFI/GRUB/grubx64.efi /boot/efi/EFI/BOOT/BOOTX64.EFI
+
+nano /boot/efi/startup.nsh
+
+bcf boot add 1 fs0:\EFI\GRUB\grubx64.efi "Mi GRUB"
+exit
+
+grub-mkconfig -o /boot/grub/grub.cfg
+
+
+36.	mkinitcpio -p linux
+//Instalación de LINUX
+
+
+37.	$-exit
+	#-exit
+
+38.	umount /mnt/boot
+	umount /mnt/home
+	umount /mnt
+//desmontamos particiones.
+
+39.	reboot
+
+40.	Entramos como root y la clave que pusimos.
+
+41.	ping -c 3 archlinux.org
+
+42.      ip link
+
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP mode DORMANT group default qlen 1000
+    link/ether e4:a7:a0:4b:41:82 brd ff:ff:ff:ff:ff:ff
+
+43.       nano /etc/systemd/network/enp0s3.network
+            [Match]
+            name=en*
+            [Network]
+            DHCP=yes
+
+44.     systemctl enable systemd-networkd
+45.     systemctl restart systemd-networkd
+
+46.     nano /etc/resolv.conf
+        nameserver 1.1.1.1
+        nameserver 8.8.8.8
+
+47.     nano /etc/pacman.conf
+        # Misc options
+        #UseSyslog
+        Color
+        TotalDownload
+        CheckSpace
+        VerbosePkgLists
+        ILoveCandy
+
+48.     pacman -Syyu
+
+49.     pacman -S git wget linux-headers neofetch
+
+50.     pacman -Sy xorg xorg-xinit xorg-twm xorg-xclock xterm
+ // no usar nvidia, al menos que cuentes con una.
+ // Para ejecutar el escritorio solo escribe -	startx
+
+51.     Driver Video
+        lspci |grep VGA
+        neofetch
+        pacman -S virtualbox-guest-utils 
+        systemctl enable vboxservice
+
+//Modules-arch
+para el kernel de Linux elija virtualbox-host-modules-arch 
+para otros kernels elige virtualbox-host-dkms
+        
+
+52.     pacman -S xfce4 xfce4-goodies mousepad network-manager-applet
+
+53.     pacman -S ttf-freefont ttf-hack ttf-inconsolata
+
+54.     pacman -S lightdm lightdm-gtk-greeter
+        systemctl enable lightdm
+
+55.     pacman -S chromium vlc 
+
+56.     sudo pacman -S gvfs
+
+57.     git clone https://aur.archlinux.org/yay.git
+        cd yay/
+        makepkg -si
+
+
+https://www.zeitverschiebung.net/es/country/ar
+
+
+Organizar particiones:
+sudo pacman -S android-file-transfer msmtp libmtp libcddb gvfs gvfs gvfs-afc gvfs-smb gvfs-gphoto2 gvfs-mtp gvfs-goa gvfs-nfs gvfs-google
+
+Leer cualquier formato de disco:
+sudo pacman -S dosfstools jfsutils f2fs-tools btrfs-progs exfat-utils ntfs-3g reiserfsprogs udftools xfsprogs nilfs-utils polkit gpart mtools
+
+Compresión y Descompresión:
+sudo pacman -S xarchiver binutils gzip lha lrzip lzip lz4 p7zip tar xz bzip2 p7zip lbzip2 arj lzop cpio unrar unzip zstd zip lzip unarj zstd 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
