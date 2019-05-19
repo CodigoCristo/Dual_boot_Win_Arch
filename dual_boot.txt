@@ -129,6 +129,10 @@ los usara a futuro para instalar programas nuevos.
 //Es un gestor multiarranque
 //Instale el paquete grub. Este reemplazará a grub-legacy [BIOS], si está instalado.
 
+12.	pacstrap /mnt linux-headers
+//cabeceras de linux
+//servira para programas extra y aceleramiento de graficos
+
 13.	genfstab -U /mnt >> /mnt/etc/fstab
 //Genere un archivo fstab para las etiquetas de nuestras particiones
 //Luego, compruebe el archivo resultante en /mnt/etc/fstab 
@@ -178,17 +182,17 @@ los usara a futuro para instalar programas nuevos.
 24.	nano /etc/hosts
             127.0.0.1   localhost   //ipv4
             ::1         localhost  //ipv6
-            127.0.0.1   elnombredemiequipo.localdomain elnombredemiequipo
+            127.0.1.1   elnombredemiequipo.localdomain elnombredemiequipo
 
 //Si el sistema tiene una dirección IP permanente, 
-se debe usar en lugar de 127.0.1.1.
+//se debe usar en lugar de 127.0.1.1.
+//si presenta desconexiones de internet cambiar el valor a
+//127.0.0.1
 
 25.	systemctl enable dhcpcd
 //Para activar la conexión cableada, estaba activada en el iso,
 pero dentro de nuestro sistema [/mnt] aún no y listo podemos usar pacman.
 //pacman > gestor de instalación de archivos.
-
-
 
 26.	pacman -S reflector
 //es un script que es capaz de generar una lista y usa los repositorios mas rapidos
@@ -199,6 +203,7 @@ pero dentro de nuestro sistema [/mnt] aún no y listo podemos usar pacman.
 
 28.	pacman -S networkmanager
 	systemctl enable NetworkManager
+	
 //Detección y configuración automática para conectarse a la red. 
 //Las funcionalidades de NetworkManager son útiles tanto para redes inalámbricas como por cable. 
 //NetworkManager se ha iniciado, se conectará automáticamente a cualesquiera 
@@ -206,6 +211,7 @@ pero dentro de nuestro sistema [/mnt] aún no y listo podemos usar pacman.
 
 30.	pacman -S openssh
 	systemctl enable sshd
+	
 //SSH es un protocolo de red que permite el intercambio de datos sobre un canal seguro entre dos computadoras
 //Para navegar seguros en internet
 
@@ -219,6 +225,7 @@ pero dentro de nuestro sistema [/mnt] aún no y listo podemos usar pacman.
 
 33.	nano /etc/sudoers
 	nombre_de_usuario ALL=(ALL) ALL
+	
 //Buscamos root ALL=(ALL) ALL y abajo ponemos nuestro usuario
 para que tenga permisos de superusuario y tenga mismos privilegios que root.
 //CTRL + O para guardar CTRL + X para salir
@@ -256,11 +263,16 @@ grub-mkconfig -o /boot/grub/grub.cfg
 
 37.	$-exit
 	#-exit
+	
+// Tambien podemos usar Ctrl + D 
 
 38.	umount /mnt/boot
 	umount /mnt/home
 	umount /mnt
 //desmontamos particiones.
+// tambien podemos usar
+// umount -R /mnt
+// así se desmonta todo de /mnt
 
 39.	reboot
 
@@ -280,6 +292,8 @@ grub-mkconfig -o /boot/grub/grub.cfg
             name=en*
             [Network]
             DHCP=yes
+	    
+// Se recomiensa solo poner para la conexión cableada
 
 44.     systemctl enable systemd-networkd
 45.     systemctl restart systemd-networkd
@@ -287,6 +301,8 @@ grub-mkconfig -o /boot/grub/grub.cfg
 46.     nano /etc/resolv.conf
         nameserver 1.1.1.1
         nameserver 8.8.8.8
+	
+// en caso ya tengas datos en el archivo no modificar nada
 
 47.     nano /etc/pacman.conf
         # Misc options
@@ -296,24 +312,45 @@ grub-mkconfig -o /boot/grub/grub.cfg
         CheckSpace
         VerbosePkgLists
         ILoveCandy
+	
+// Por lo general yo solo quito # en color y agrego ILoveCandy
 
 48.     pacman -Syyu
 
-49.     pacman -S git wget linux-headers neofetch
+49.     pacman -S git wget neofetch lsb-release
+
+// Git para hacer descargas de github
+// wget para hacer descargas de paginas web
+// neofetch para ver informacion de nuestro equipo, no servira para ver nuestra GPU y CPU
+// lsb-release nos ayuda a guardar nuestro información de nuestro equipo
+// /etc/lsb-release
+// Aveces cuando instalamos otra distro Grub no reconoce nuestro sistema operativo por falta de ese archivo
+
+	pacman -S intel-ucode
+
+//Los fabricantes de procesadores lanzan actualizaciones de estabilidad y seguridad al microcódigo del procesador. Si bien el microcódigo se puede actualizar a través del BIOS, el kernel de Linux también puede aplicar estas actualizaciones durante el arranque. Estas actualizaciones proporcionan correcciones de errores que pueden ser críticas para la estabilidad de su sistema. Sin estas actualizaciones, puede experimentar fallas falsas o paradas inesperadas del sistema
+//  pacman -S amd-ucode
+//  pacman -S intel-ucode
 
 50.     pacman -Sy xorg xorg-xinit xorg-twm xorg-xclock xterm
  // no usar nvidia, al menos que cuentes con una.
  // Para ejecutar el escritorio solo escribe -	startx
+ // no es necesario instalar xorg-twm xorg-xclock
+ // xterm es la terminal del servidor X
 
 51.     Driver Video
         lspci |grep VGA
         neofetch
+// Aqui podemos ver nuestra tarjeta de video
+// revisar mi video para saber que driver instalar
+// https://youtu.be/Hl9R5_JFzUM
+
         pacman -S virtualbox-guest-utils 
         systemctl enable vboxservice
 
 //Modules-arch
-para el kernel de Linux elija virtualbox-host-modules-arch 
-para otros kernels elige virtualbox-host-dkms
+//para el kernel de Linux elija virtualbox-host-modules-arch 
+//para otros kernels elige virtualbox-host-dkms
         
 
 52.     pacman -S xfce4 xfce4-goodies mousepad network-manager-applet
@@ -322,6 +359,14 @@ para otros kernels elige virtualbox-host-dkms
 
 54.     pacman -S lightdm lightdm-gtk-greeter
         systemctl enable lightdm
+
+	reboot
+	
+	sudo pacman -S xdg-user-dirs
+	xdg-user-dirs-update
+	
+// xdg-user-dirs es una herramienta para ayudar a administrar directorios de usuarios "musica" "descargas" "imagenes"
+// También maneja la localización (es decir, la traducción) de los nombres de archivo.
 
 55.     pacman -S chromium vlc 
 
